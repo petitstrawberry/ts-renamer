@@ -4,6 +4,7 @@ const path = require("path");
 
 const fse = require("fs-extra");
 const program = require("commander");
+const iconv = require("iconv-lite");
 
 const TsRenamer = require("./lib/ts_renamer");
 const settings = require("./settings/settings");
@@ -38,6 +39,8 @@ program
     .option(`--${settings.options.checkDrop ? "no-" : ""}check-drop`, `${settings.options.checkDrop ? "Disable" : "Enable"} check drop`)
     .option("--start-time-offset <value>", "Start time offset (check time)", Number.parseInt)
     .option("--duration-offset <value>", "Duration offset (check time)", Number.parseInt)
+    .option("--redirect <path>", "Redirect output")
+    .option("--redirect-with-SJIS <path>", "Redirect output with Shift_JIS")
     .parse(process.argv);
 
 (async () => {
@@ -82,6 +85,22 @@ program
 
         try {
             await tsRenamer.execute();
+
+            if (options.redirect || options.redirectWithSJIS) {
+
+                if (options.redirect_with_sjis) {
+                    // UTF-8 to Shift_JIS
+                    const output = iconv.encode(tsRenamer.output, "Shift_JIS");
+                    // write output to file
+                    fse.writeFileSync(options.redirectWithSJIS, output);
+
+                } else {
+                    // write output to file
+                    fse.writeFileSync(options.redirect, tsRenamer.output);
+
+                }
+            }
+
         } catch (err) {
             console.error(`Error: ${err.message}\n`);
 
